@@ -27,15 +27,17 @@ import { IoAddOutline } from "react-icons/io5";
 import { createTask, deleteTask, updateTask } from "@/services/task";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@prisma/client";
+import { authClient } from "@/lib/auth-client";
 type Props = {
   task?: Task;
-  onSubmitOrDelete?: () => void
+  onSubmitOrDelete?: () => void;
+  defaultDate?: Date
 };
 
 export default function Form(props: Props) {
-  const { task, onSubmitOrDelete } = props;
+  const { task, onSubmitOrDelete, defaultDate } = props;
   const isEditing = !!task;
-
+  const { data: session, isPending } = authClient.useSession();
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: isEditing
@@ -52,8 +54,14 @@ export default function Form(props: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const onSubmit = async (data: FormSchema) => {
     setIsLoading(true);
+    const ownerId = session.user.id;
     if (!isEditing) {
-      await createTask(data);
+      await createTask({
+        ...data,
+        ownerId,
+        description: data?.description || "",
+        createdAt: defaultDate
+      });
     } else {
       const newTask = {
         id: task.id,
@@ -70,13 +78,13 @@ export default function Form(props: Props) {
         ? "Your task was edited successfully!"
         : "Your new task was created successfully!",
     });
-    onSubmitOrDelete?.()
+    onSubmitOrDelete?.();
   };
 
   const onDelete = async () => {
     if (!task?.id) return;
     await deleteTask(task.id);
-    onSubmitOrDelete?.()
+    onSubmitOrDelete?.();
   };
   return (
     <FormComp {...form}>
@@ -134,6 +142,7 @@ export default function Form(props: Props) {
                   <IoAddOutline />
                 )
               }
+              disabled={isPending || isLoading}
             >
               Add Task
             </Button>
@@ -157,13 +166,13 @@ export default function Form(props: Props) {
         />
         {isEditing ? (
           <div className="flex items-center gap-2">
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isPending || isLoading}>
               Save Changes
             </Button>
             <Button
               variant="destructive"
               onClick={onDelete}
-              disabled={isLoading}
+              disabled={isPending || isLoading}
             >
               Delete
             </Button>

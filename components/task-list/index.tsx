@@ -26,9 +26,11 @@ export default async function TaskList() {
       <Table className="w-full h-full">
         <TableCaption>A list of your tasks.</TableCaption>
         <TableHeader>
-          <TableHead>Date</TableHead>
+        <TableRow>
+        <TableHead>Date</TableHead>
           <TableHead>Title</TableHead>
           <TableHead>Status</TableHead>
+        </TableRow>
         </TableHeader>
         <TableBody>
           {tasks.map((task) => (
